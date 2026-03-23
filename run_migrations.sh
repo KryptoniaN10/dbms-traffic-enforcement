@@ -12,6 +12,11 @@ MIGRATIONS_DIR="./db/migrations"
 
 echo "Connecting to database $DB_NAME as $DB_USER inside Docker container..."
 
+# 0. Clear existing data from tables
+docker compose exec -T -e PGPASSWORD="$PGPASSWORD" db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "
+TRUNCATE TABLE fine, violation, vehicle, owner, officer, violation_type, schema_migrations RESTART IDENTITY CASCADE;
+"
+
 # 1. Ensure the schema_migrations table exists
 docker compose exec -T -e PGPASSWORD="$PGPASSWORD" db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "
 CREATE TABLE IF NOT EXISTS schema_migrations (
