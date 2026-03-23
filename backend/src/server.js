@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { rateLimit } = require('express-rate-limit');
 const pool = require('./db');
 const { hashPassword, comparePassword, createToken } = require('./auth');
 const { requireAuth } = require('./middleware');
@@ -9,7 +10,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/health', async (_req, res) => {
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/auth', authLimiter);
+app.use('/api', apiLimiter);
+
+app.get('/health', apiLimiter, async (_req, res) => {
   try {
     await pool.query('SELECT 1');
     return res.json({ status: 'ok' });
