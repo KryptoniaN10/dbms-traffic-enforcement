@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:16
@@ -13,6 +11,40 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traffic_user -d traffic_system"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: traffic_backend
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: traffic_user
+      DB_PASSWORD: traffic_pass
+      DB_NAME: traffic_system
+      JWT_SECRET: super_secret_change_me
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: traffic_frontend
+    environment:
+      VITE_API_URL: http://localhost:3000
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
 
 volumes:
   pgdata:
