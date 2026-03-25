@@ -1,0 +1,54 @@
+-- Migration: 0006_payment_and_penalty
+-- Description: Creates payment table, apply_late_penalty() function,
+--              and before_payment_insert trigger.
+
+-- ============================================================
+-- TABLE: payment
+-- ============================================================
+CREATE TABLE IF NOT EXISTS payment (
+    payment_id     SERIAL PRIMARY KEY,
+    fine_id        INTEGER NOT NULL REFERENCES fine(fine_id) ON DELETE CASCADE,
+    amount_paid    NUMERIC(10, 2) NOT NULL,
+    payment_date   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    payment_method VARCHAR(30),
+
+    CONSTRAINT chk_amount_paid_positive CHECK (amount_paid > 0)
+);
+
+
+-- ============================================================
+-- FUNCTION: apply_late_penalty()
+-- ============================================================
+CREATE OR REPLACE FUNCTION apply_late_penalty()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_due_date      TIMESTAMP;
+    v_current_amount NUMERIC(10, 2);
+BEGIN
+    -- Step 1: Fetch due_date and current amount from fine table
+    SELECT due_date, amount
+      INTO v_due_date, v_current_amount
+      FROM fine
+     WHERE fine_id = NEW.fine_id;
+
+    -- Step 2: If payment is being made after due_date, apply 10% penalty
+    IF NEW.payment_date > v_due_date THEN
+        UPDATE fine
+           SET amount = ROUND(v_current_amount * 1.10, 2)
+         WHERE fine_id = NEW.fine_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ============================================================
+-- TRIGGER: before_payment_insert
+-- ============================================================
+DROP TRIGGER IF EXISTS before_payment_insert ON payment;
+
+CREATE TRIGGER before_payment_insert
+    BEFORE INSERT ON payment
+    FOR EACH ROW
+    EXECUTE FUNCTION apply_late_penalty();
