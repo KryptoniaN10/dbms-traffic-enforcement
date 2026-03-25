@@ -18,4 +18,8 @@ CREATE TABLE IF NOT EXISTS fine (
 
     CONSTRAINT chk_due_after_issue
         CHECK (due_date >= issued_date)
+<<<<<<< HEAD
 );
+=======
+);
+>>>>>>> 5b7bc4d730ba1c5ac0e1a47e4cef86393bf6955d
