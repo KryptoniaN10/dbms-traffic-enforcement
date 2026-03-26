@@ -6,10 +6,17 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setStats({ total_violations: 1254, unpaid_fines: 6450.50, blacklisted_vehicles: 12, suspended_licenses: 5 });
-      setLoading(false);
-    }, 800);
+    const fetchStats = async () => {
+      try {
+        const response = await api.get('/stats');
+        setStats(response.data);
+      } catch (error) {
+        console.error("Failed to load generic stats", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
   }, []);
 
   const CardSkeleton = () => (

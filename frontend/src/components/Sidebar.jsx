@@ -21,7 +21,7 @@ const Sidebar = () => {
     { name: "Dashboard", path: "/dashboard", roles: ["ADMIN", "OFFICER", "CLERK"] },
     { name: "Owners", path: "/owners", roles: ["ADMIN", "OFFICER"] },
     { name: "Vehicles", path: "/vehicles", roles: ["ADMIN", "OFFICER"] },
-    { name: "Add Violation", path: "/violations/new", roles: ["OFFICER"] },
+    { name: "Add Violation", path: "/violations/new", roles: ["ADMIN", "OFFICER"] },
     { name: "Payments", path: "/payments", roles: ["ADMIN", "CLERK"] },
     { name: "Blacklist", path: "/blacklist", roles: ["ADMIN", "OFFICER"] },
     { name: "Reports", path: "/reports", roles: ["ADMIN"] },

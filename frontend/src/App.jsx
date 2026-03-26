@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AddViolation from './pages/AddViolation';
 import Vehicles from './pages/Vehicles';
@@ -20,7 +21,8 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          
+          <Route path="/register" element={<Register />} />
+
           <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
@@ -39,7 +41,7 @@ function App() {
             />
             <Route 
               path="violations/new" 
-              element={<ProtectedRoute allowedRoles={['OFFICER']}><AddViolation /></ProtectedRoute>} 
+              element={<ProtectedRoute allowedRoles={['ADMIN', 'OFFICER']}><AddViolation /></ProtectedRoute>} 
             />
             <Route 
               path="payments" 

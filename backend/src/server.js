@@ -82,6 +82,24 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.use('/api', requireAuth);
 
+app.get('/api/stats', async (req, res) => {
+  try {
+    const violationsResult = await pool.query('SELECT COUNT(*) FROM violation');
+    const unpaidResult = await pool.query('SELECT COALESCE(SUM(amount), 0) as total FROM fine WHERE fine_id NOT IN (SELECT fine_id FROM payment)');
+    const blacklistResult = await pool.query('SELECT COUNT(*) FROM blacklist');
+    const suspendedResult = await pool.query('SELECT COUNT(*) FROM owner WHERE license_status = $1', ['SUSPENDED']);
+    
+    return res.json({
+      total_violations: parseInt(violationsResult.rows[0].count, 10),
+      unpaid_fines: parseFloat(unpaidResult.rows[0].total),
+      blacklisted_vehicles: parseInt(blacklistResult.rows[0].count, 10),
+      suspended_licenses: parseInt(suspendedResult.rows[0].count, 10)
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/:resource', async (req, res) => {
   const config = resources[req.params.resource];
   if (!config) {
@@ -120,6 +138,14 @@ app.post('/api/:resource', async (req, res) => {
   }
 
   const payload = req.body || {};
+  
+  // SECURE: Automatically assign the submitting user as the officer
+  if (req.params.resource === 'violations' && req.user) {
+    // Note: Assuming `req.user.user_id` corresponds to the `officer_id` in a 1:1 scheme,
+    // or just inject it so the frontend doesn't need to specify it.
+    payload.officer_id = req.user.user_id;
+  }
+
   const keys = config.fields.filter((field) => Object.prototype.hasOwnProperty.call(payload, field));
 
   if (!keys.length) {

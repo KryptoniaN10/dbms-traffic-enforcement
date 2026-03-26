@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import api from "../services/api";
 
 const VehicleDetails = () => {
   const { id } = useParams();
@@ -7,29 +8,21 @@ const VehicleDetails = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setVehicle({
-        vehicle_id: id,
-        make: "Toyota",
-        model: "Camry",
-        body_type: "Sedan",
-        color: "Silver",
-        registration_date: "2022-01-15",
-        license_status: "ACTIVE",
-        owner: {
-          full_name: "John Doe",
-          license_number: "DL-992384",
-          phone: "555-0192",
-          email: "john.doe@example.com",
-          address: "123 Main St, Cityville"
-        },
-        violations: [
-          { violation_id: 101, type: "Speeding", date: "2023-10-12", location: "Highway 9", amount: 150.00, status: "PAID" },
-          { violation_id: 105, type: "Illegal Parking", date: "2023-11-05", location: "Downtown", amount: 75.00, status: "UNPAID" }
-        ]
-      });
-      setLoading(false);
-    }, 600);
+    const fetchDetails = async () => {
+      try {
+        const response = await api.get(`/vehicles/${id}`);
+        // To make it look like our old mock, attach empty owner and violations or fetch them:
+        const data = response.data;
+        data.owner = data.owner || { full_name: "Unknown", license_number: "N/A", phone: "N/A", address: "N/A" };
+        data.violations = data.violations || [];
+        setVehicle(data);
+      } catch (error) {
+        console.error("Failed to load vehicle details", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetails();
   }, [id]);
 
   if (loading) {

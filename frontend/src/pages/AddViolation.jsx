@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 const AddViolation = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [types, setTypes] = useState([]);
   const [formData, setFormData] = useState({
     vehicle_id: "",
     violation_type_id: "",
@@ -11,13 +13,34 @@ const AddViolation = () => {
     description: ""
   });
 
-  const handleSubmit = (e) => {
+  // Since officer_id is required, assume user has ID or use dummy 1
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const response = await api.get('/violation-types');
+        setTypes(response.data);
+      } catch (err) {
+        console.error("Failed to load violation types", err);
+      }
+    };
+    fetchTypes();
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-        setLoading(false);
-        navigate('/dashboard');
-    }, 1000);
+    try {
+      await api.post('/violations', {
+        ...formData,
+        // officer_id is securely extracted from the JWT token on the backend side
+        status: 'UNPAID'
+      });
+      navigate('/dashboard');
+    } catch (err) {
+      console.error("Failed to submit citation", err);
+      alert("Error: " + (err.response?.data?.error || "Failed to submit citation"));
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,14 +59,14 @@ const AddViolation = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700">License Plate</label>
+                        <label className="text-sm font-semibold text-slate-700">Vehicle ID</label>
                         <input 
                             required
-                            type="text" 
-                            placeholder="e.g. CAB-1023"
+                            type="number" 
+                            placeholder="e.g. 1"
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all font-mono uppercase"
                             value={formData.vehicle_id}
-                            onChange={(e) => setFormData({...formData, vehicle_id: e.target.value})}
+                            onChange={(e) => setFormData({...formData, vehicle_id: parseInt(e.target.value, 10)})}
                         />
                     </div>
                     <div className="space-y-2">
@@ -55,10 +78,9 @@ const AddViolation = () => {
                             onChange={(e) => setFormData({...formData, violation_type_id: e.target.value})}
                         >
                             <option value="" disabled>Select infraction...</option>
-                            <option value="1">Speeding</option>
-                            <option value="2">Running Red Light</option>
-                            <option value="3">Illegal Parking</option>
-                            <option value="4">Reckless Driving</option>
+                            {types.map(t => (
+                              <option key={t.violation_type_id} value={t.violation_type_id}>{t.violation_name}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -66,14 +88,15 @@ const AddViolation = () => {
                 <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700">Location of Incident</label>
                     <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         </div>
                         <input 
                             required
                             type="text" 
                             placeholder="Street name, Intersection, etc."
-                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all"
+                            className="w-full pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-sm"
+                            style={{ paddingLeft: "3.2rem" }}
                             value={formData.location}
                             onChange={(e) => setFormData({...formData, location: e.target.value})}
                         />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import api from "../services/api";
 
 const Payments = () => {
   const [fines, setFines] = useState([]);
@@ -7,23 +8,37 @@ const Payments = () => {
   const [selectedFine, setSelectedFine] = useState(null);
 
   useEffect(() => {
-    setTimeout(() => {
-      setFines([
-        { fine_id: 201, violation_id: 105, amount: 75.00, due_date: "2023-12-05", status: "UNPAID", vehicle_id: "CAB-1023" },
-        { fine_id: 202, violation_id: 106, amount: 250.00, due_date: "2023-12-10", status: "LATE", vehicle_id: "SDF-4492" }
-      ]);
-      setLoading(false);
-    }, 600);
+    const fetchFines = async () => {
+      try {
+        const response = await api.get('/fines');
+        setFines(response.data);
+      } catch (err) {
+        console.error("Failed to load fines", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFines();
   }, []);
 
-  const handleProcess = (e) => {
+  const handleProcess = async (e) => {
     e.preventDefault();
     setProcessing(true);
-    setTimeout(() => {
+    try {
+      await api.post('/payments', {
+        fine_id: selectedFine.fine_id,
+        amount_paid: selectedFine.amount,
+        payment_method: "CARD"
+      });
+      // Optionally update fine status here if your backend doesn't handle it
       setFines(fines.filter(f => f.fine_id !== selectedFine.fine_id));
-      setProcessing(false);
       setSelectedFine(null);
-    }, 1000);
+    } catch (err) {
+      console.error("Failed to process payment", err);
+      alert("Payment error: " + (err.response?.data?.error || "Unknown"));
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -32,14 +47,16 @@ const Payments = () => {
         <h1 className="text-xl font-bold text-slate-800">Pending Fines & Collections</h1>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-lg rounded-xl shadow-md border border-slate-200 overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-lg rounded-xl shadow-lg border border-slate-200 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-slate-500 font-medium tracking-wide">Loading records...</div>
+          <div className="p-12 flex justify-center items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-800"></div>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-100/50 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+              <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-bold border-b border-slate-200">
+                <tr>
                   <th className="px-6 py-4">Receipt / Fine ID</th>
                   <th className="px-6 py-4">Vehicle</th>
                   <th className="px-6 py-4">Amount Due</th>
@@ -47,25 +64,32 @@ const Payments = () => {
                   <th className="px-6 py-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100">
                 {fines.map(fine => (
-                  <tr key={fine.fine_id} className="hover:bg-slate-50 even:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-sm text-slate-600">#{fine.fine_id} / V-{fine.violation_id}</td>
-                    <td className="px-6 py-4 font-bold text-slate-800">{fine.vehicle_id}</td>
-                    <td className="px-6 py-4 font-black text-slate-800">${fine.amount.toFixed(2)}</td>
+                  <tr key={fine.fine_id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${
-                        fine.status === 'LATE' 
-                        ? 'bg-red-100 text-red-700 border-red-200' 
-                        : 'bg-yellow-100 text-yellow-700 border-yellow-200'
-                      }`}>
-                        {fine.status}
+                      <div className="flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </span>
+                        <span className="font-mono text-sm font-semibold text-slate-700">#{fine.fine_id}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-sm">
+                        V-{fine.vehicle_id || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-black text-slate-800 text-lg">${parseFloat(fine.amount).toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-1 rounded-md text-xs font-bold border bg-yellow-50 text-yellow-700 border-yellow-200">
+                        PENDING
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button 
                         onClick={() => setSelectedFine(fine)}
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-all active:scale-95"
+                        className="px-4 py-2 bg-white border border-slate-200 hover:border-slate-800 hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-bold rounded-lg shadow-sm transition-all active:scale-95"
                       >
                         Process Payment
                       </button>
@@ -73,7 +97,14 @@ const Payments = () => {
                   </tr>
                 ))}
                 {fines.length === 0 && (
-                  <tr><td colSpan="5" className="p-8 text-center text-slate-500 font-medium tracking-wide">No pending fines.</td></tr>
+                  <tr>
+                    <td colSpan="5" className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center text-slate-400">
+                        <svg className="w-12 h-12 mb-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span className="font-medium text-slate-500">All fines have been settled.</span>
+                      </div>
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -94,11 +125,11 @@ const Payments = () => {
             <div className="space-y-4 mb-8">
               <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100 shadow-sm">
                 <span className="text-sm font-medium text-slate-500">Fine Amount</span>
-                <span className="text-lg font-black text-slate-800">${selectedFine.amount.toFixed(2)}</span>
+                <span className="text-lg font-black text-slate-800">${parseFloat(selectedFine.amount).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center px-2">
                 <span className="text-sm text-slate-500">Vehicle</span>
-                <span className="text-sm font-bold text-slate-700">{selectedFine.vehicle_id}</span>
+                <span className="text-sm font-bold text-slate-700">{selectedFine.vehicle_id || 'Unknown'}</span>
               </div>
             </div>
 
