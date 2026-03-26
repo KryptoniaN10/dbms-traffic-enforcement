@@ -51,6 +51,10 @@ const Owners = () => {
           <div className="p-12 flex justify-center items-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-800"></div>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-12 flex justify-center items-center text-slate-500">
+            {search ? `No owners found matching "${search}"` : "No owners registered yet."}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
             {filtered.map(owner => (

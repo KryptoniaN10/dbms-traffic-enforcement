@@ -69,7 +69,9 @@ const Vehicles = () => {
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-slate-500 flex flex-col items-center">
             <svg className="w-12 h-12 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <p className="font-medium">No vehicles found matching "{search}"</p>
+            <p className="font-medium">
+              {search ? `No vehicles found matching "${search}"` : "No vehicles registered yet."}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
