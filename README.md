@@ -1,34 +1,48 @@
 # Smart Traffic Violation and Enforcement Management System
 
-This project uses a Dockerized PostgreSQL database to ensure a deterministic and reproducible development environment for the team.
+This project now includes:
+- PostgreSQL database with migration scripts
+- Node.js backend API with JWT auth
+- React frontend with a modern CRUD dashboard
+- Docker Compose orchestration for all services
 
 ## Prerequisites
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
 
-## Database Commands
+## Run the full stack
 
-### Start the database
-Run the database in the background:
 ```bash
-docker-compose up -d
+docker compose up -d --build
 ```
 
-### Stop the database
-Stop the container without deleting the data:
-```bash
-docker-compose stop
-```
-*(To stop and remove the container, use `docker-compose down`)*
+Services:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
+- PostgreSQL: localhost:5433
 
-### Connect using psql
-Connect to the running database container using the `psql` CLI:
+## Apply migrations
+
 ```bash
+bash run_migrations.sh
+```
+
+## Useful commands
+
+```bash
+docker compose logs -f
+docker compose stop
+docker compose down
 docker exec -it traffic_db psql -U traffic_user -d traffic_system
 ```
 
-## Project Structure
-- `/db/migrations`: Schema evolution scripts (tables, alters).
-- `/db/schema`: Base schema definitions (if separated from migrations).
-- `/db/functions`: Stored procedures and functions.
-- `/db/triggers`: Business automation triggers.
-- `/db/seeds`: Sample data for testing.
+## API summary
+
+- Auth:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+- Protected CRUD:
+  - `GET/POST /api/:resource`
+  - `GET/PUT/DELETE /api/:resource/:id`
+
+Available resources:
+`owners`, `officers`, `vehicles`, `violation-types`, `violations`, `fines`, `payments`, `blacklist`
