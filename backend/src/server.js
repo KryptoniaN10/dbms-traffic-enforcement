@@ -64,8 +64,9 @@ app.post('/api/auth/register', async (req, res) => {
       }
 
       return res.status(201).json(newUser);
-    return res.status(400).json({ error: error.message });
-  }
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
 });
 
 app.post('/api/auth/login', async (req, res) => {

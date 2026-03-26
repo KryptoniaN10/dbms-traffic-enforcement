@@ -42,8 +42,9 @@ const AddViolation = () => {
   }, [user]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+      e.preventDefault();
+      if (!formData.officer_id) { alert('Please select an issuing officer.'); return; }
+      setLoading(true);
     try {
       await api.post('/violations', {
         ...formData,
